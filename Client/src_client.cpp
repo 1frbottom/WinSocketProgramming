@@ -1,3 +1,5 @@
+#undef UNICODE  // for ANSI
+
 // exclude legacy headers
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -10,7 +12,8 @@
 
 #include <iphlpapi.h>   // ip helper api
 
-#pragma comment(lib, "Ws2_32.lib")  // link library
+#pragma comment(lib, "Ws2_32.lib")          // link library
+// #pragma comment (lib, "Mswsock.lib")     // for AcceptEx
 
 //
 

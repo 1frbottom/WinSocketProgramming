@@ -1,3 +1,5 @@
+#undef UNICODE  // for ANSI
+
 // exclude legacy headers
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -10,15 +12,19 @@
 
 #include <iphlpapi.h>   // ip helper api
 
-#pragma comment(lib, "Ws2_32.lib")  // link library
+#pragma comment(lib, "Ws2_32.lib")          // link library
+// #pragma comment (lib, "Mswsock.lib")     // for AcceptEx
 
 //
 
 #define DEFAULT_PORT "27015"
+#define DEFAULT_BUFLEN 512      // buffer length
 
 //
 
 #include <iostream>
+
+
 
 int main()
 {
@@ -135,18 +141,65 @@ int main()
 
     // 7. 데이터 주고받기 ------------------------------------------------------
 
+    char recvbuf[DEFAULT_BUFLEN];       // receive buffer
+    int recvbuflen = DEFAULT_BUFLEN;
+    int iSendResult;
 
+    std::cout << "데이터 수신 대기..." << std::endl;
 
+    do
+    {
+        // 손님의 말을 기다림 (데이터 올 때까지 멈춤)
+        iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);   // accept와 동일하게 기본은 블로킹
+        if (iResult > 0)        // 성공, 반환값은 받은 바이트수
+        {
+            std::cout << "[수신] 받은 바이트 수 : " << iResult << std::endl;
 
+            // send, 테스트용 에코
+            iSendResult = send(ClientSocket, recvbuf, iResult, 0);
+            if (iSendResult == SOCKET_ERROR)
+            {
+                std::cout << "send 실패! 에러 : " << WSAGetLastError() << std::endl;
 
+                closesocket(ClientSocket);
+                WSACleanup();
 
+                return 1;
+            }
 
+            std::cout << "[송신] 에코 전송 완료 : " << iSendResult << " 바이트" << std::endl;
+        }
+        else if (iResult == 0)  // 종료
+            std::cout << "손님이 연결을 종료했습니다. (정상 종료)" << std::endl;
+        else                    // 에러
+        {
+            std::cout << "recv 실패! 에러 : " << WSAGetLastError() << std::endl;
 
+            closesocket(ClientSocket);
+            WSACleanup();
 
-    // 뒷정리 ------------------------------------------------
+            return 1;
+        }
+    } while (iResult > 0);
 
-    closesocket(ListenSocket);
-    freeaddrinfo(addrResult);
+    // 8. 소켓 연결 끊기 -----------------------------------------------------
+
+    // shutdown : 버퍼에 남은 데이터들 내보내면서 끝에 FIN 붙임
+    // closesocket : 끝난걸로 간주하고 자원(소켓) 정리
+    iResult = shutdown(ClientSocket, SD_SEND);      // ShutDown_SEND
+    if (iResult == SOCKET_ERROR)
+    {
+        std::cout << "shutdown 실패 : " << WSAGetLastError() << std::endl;
+
+        closesocket(ClientSocket);
+        WSACleanup();
+
+        return 1;
+    }
+
+    // 9. 뒷정리 ----------------------------------------------------------------
+
+    closesocket(ClientSocket);
     WSACleanup();               // 모듈 반납
 
     std::cout << "Winsock 환경 설정 성공!" << std::endl;
