@@ -46,7 +46,7 @@ int main()
 
     // 2. 주소 정보 준비 -----------------------------------------
         
-        // hints에 맞는 주소를 찾아서 result에 넣어줘라
+        // hints에 맞는 (내가원하는 규격의) 주소 구조체를 찾아서 addrResult에 넣어줘라
     struct addrinfo* addrResult = NULL;     // 주소체계, 포트번호, IP주소, ...
     struct addrinfo hints;
 
@@ -55,7 +55,7 @@ int main()
         // ai : adress information
     hints.ai_family = AF_INET;          // family : 규격 단위
     hints.ai_socktype = SOCK_STREAM;    // stream
-    hints.ai_protocol = IPPROTO_TCP;    // protocol
+    hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;        // bitmask for server
 
     iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &addrResult);
@@ -68,10 +68,11 @@ int main()
         return 1;
     }
 
-    // 3. 서버 소켓 생성 ------------------------------------------
+    // 3. 리슨 소켓 생성 ------------------------------------------
 
     SOCKET ListenSocket = INVALID_SOCKET;
-    ListenSocket = socket(addrResult->ai_family, addrResult->ai_socktype, addrResult->ai_protocol);
+    ListenSocket = socket(addrResult->ai_family, addrResult->ai_socktype, addrResult->ai_protocol); // 받은 addrResult의 규격대로 소켓 생성
+
     if (ListenSocket == INVALID_SOCKET)
     {
         std::cout << "소켓 생성 실패! 에러 : " << WSAGetLastError() << std::endl;
@@ -84,7 +85,7 @@ int main()
 
     std::cout << "서버 소켓(ListenSocket) 생성 성공!" << std::endl;
 
-    // 4. 서버 소켓 바인딩 ------------------------------------------------
+    // 4. 리슨 소켓 바인딩 ------------------------------------------------
 
     iResult = bind(ListenSocket, addrResult->ai_addr, (int)addrResult->ai_addrlen);
     if (iResult == SOCKET_ERROR)
@@ -102,7 +103,7 @@ int main()
 
     std::cout << DEFAULT_PORT << " 포트에 바인딩 성공!" << std::endl;
 
-    // 5. 소켓에서 수신 대기 ----------------------------------------------------
+    // 5. 리슨소켓의 수신 대기 ----------------------------------------------------
 
         // 리슨소켓은 수신 요청 관리 전용, 실제 수신은 전용 소켓을 새로 만듬
     iResult = listen(ListenSocket, SOMAXCONN);  // Socket Maximum Connections
@@ -151,6 +152,7 @@ int main()
     {
         // 손님의 말을 기다림 (데이터 올 때까지 멈춤)
         iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);   // accept와 동일하게 기본은 블로킹
+        
         if (iResult > 0)        // 성공, 반환값은 받은 바이트수
         {
             std::cout << "[수신] 받은 바이트 수 : " << iResult << std::endl;
