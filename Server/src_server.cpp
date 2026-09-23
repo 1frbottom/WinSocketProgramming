@@ -122,7 +122,7 @@ int main()
     // 6. 수신 수락 ---------------------------------------------------------
 
     SOCKET ClientSocket = INVALID_SOCKET;
-    ClientSocket = accept(ListenSocket, NULL, NULL);    // Blocking 방식 : 클라이언트가 접속하기 전까지 코드(스레드)는 여기서 멈춰서 기다림
+    ClientSocket = accept(ListenSocket, NULL, NULL);    // Blocking 방식 : 클라이언트가 connect 완료하기 전까지, 즉 handshake 끝나기 전까지 코드(스레드)는 여기서 멈춰서 기다림
                                                         // 실제로는 논블로킹 + 이벤트 감시 주로 사용
                                                         // 게임에서는 목적에 맞게 RUDP(이동조준), 윈도우IOCP+AcceptEx(대규모게임로직), 리눅스도커-프레임워크(플랫폼,매칭)
 

@@ -14,6 +14,7 @@
 // #pragma comment (lib, "Mswsock.lib")     // for AcceptEx
 
 #define DEFAULT_PORT "20715"
+#define DEFAULT_BUFLEN 512      // buffer length
 
 //
 
@@ -81,7 +82,80 @@ int main()
     }
     std::cout << "클라이언트 소켓 생성 성공!" << std::endl;
 
-    // 4. -----------------------------------------------------
+    // 4. 서버에 연결 시도 -----------------------------------------------------
+
+        // 3way handshake 시작
+    iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+    if (iResult == SOCKET_ERROR)
+    {
+        std::cout << "서버 연결 실패! 에러 코드: " << WSAGetLastError() << std::endl;
+
+        closesocket(ConnectSocket);
+
+        // 원래는 목적지의 또다른 주소정보로 소켓을 만든후 connect하는 루프를 돌아야함
+        ConnectSocket = INVALID_SOCKET;
+    }
+
+        // 다쓴 주소정보 해제
+    freeaddrinfo(addrResult);
+
+        // 최종적으로 연결에 실패했는지 확인
+    if (ConnectSocket == INVALID_SOCKET)
+    {
+        std::cout << "서버에 접속할 수 없습니다! (서버가 켜져 있는지 확인하세요)" << std::endl;
+
+        WSACleanup();
+
+        return 1;
+    }
+
+    std::cout << "서버에 성공적으로 연결되었습니다! (connect 성공)" << std::endl;
+
+    // 5. 서버에 데이터 전송 및 대기
+
+    const char* sendbuf = "this is a test";
+    int recvbuflen = DEFAULT_BUFLEN;
+    char recvbuf[DEFAULT_BUFLEN];
+
+        // 전송
+    iResult = send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0);
+    if (iResult == SOCKET_ERROR)
+    {
+        std::cout << "send 실패! 에러: " << WSAGetLastError() << std::endl;
+
+        closesocket(ConnectSocket);
+        WSACleanup();
+
+        return 1;
+    }
+
+    std::cout << "[송신 성공] 보낸 바이트: " << iResult << " (" << sendbuf << ")" << std::endl;
+
+        // 대기
+    std::cout << "서버의 답장을 기다리는 중..." << std::endl;
+
+    do
+    {
+        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+        if (iResult > 0)
+            std::cout << "[수신 성공] 서버로부터 받은 바이트: " << iResult << std::endl;
+        else if (iResult == 0)
+            std::cout << "서버가 전화를 정상적으로 끊었습니다. (통신 완료)" << std::endl;
+        else
+            std::cout << "recv 실패! 에러: " << WSAGetLastError() << std::endl;
+    } while (iResult > 0);
+
+    // 6. 
+
+
+
+
+
+
+
+
+
+
 
 
     // 마무리
