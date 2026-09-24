@@ -13,7 +13,7 @@
 #pragma comment(lib, "Ws2_32.lib")          // link library
 // #pragma comment (lib, "Mswsock.lib")     // for AcceptEx
 
-#define DEFAULT_PORT "20715"
+#define DEFAULT_PORT "27015"
 #define DEFAULT_BUFLEN 512      // buffer length
 
 //
@@ -64,36 +64,43 @@ int main()
         return 1;
     }
 
+        // connect 성공할때까지 받은 주소정보 루프
+    SOCKET ConnectSocket = INVALID_SOCKET;
+    for (ptr = addrResult; ptr != NULL; ptr = ptr->ai_next)
+    {
+
     // 3. 소켓 생성 -------------------------------------------------------
 
-    ptr = addrResult; // 조회된 첫 번째 주소 사용
+        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol); // 받은 addrResult의 규격대로 소켓 생성
 
-    SOCKET ConnectSocket = INVALID_SOCKET;
-    ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol); // 받은 addrResult의 규격대로 소켓 생성
+        if (ConnectSocket == INVALID_SOCKET)
+        {
+            std::cout << "소켓 생성 실패 : " << WSAGetLastError() << std::endl;
 
-    if (ConnectSocket == INVALID_SOCKET)
-    {
-        std::cout << "소켓 생성 실패 : " << WSAGetLastError() << std::endl;
+            freeaddrinfo(addrResult);
+            WSACleanup();
 
-        freeaddrinfo(addrResult);
-        WSACleanup();
-
-        return 1;
-    }
-    std::cout << "클라이언트 소켓 생성 성공!" << std::endl;
+            return 1;
+        }
+        std::cout << "클라이언트 소켓 생성 성공!" << std::endl;
 
     // 4. 서버에 연결 시도 -----------------------------------------------------
 
         // 3way handshake 시작
-    iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-    if (iResult == SOCKET_ERROR)
-    {
-        std::cout << "서버 연결 실패! 에러 코드: " << WSAGetLastError() << std::endl;
+        iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
+        if (iResult == SOCKET_ERROR)
+        {
+            std::cout << "서버 연결 실패! 에러 코드: " << WSAGetLastError() << std::endl;
 
-        closesocket(ConnectSocket);
+            closesocket(ConnectSocket);
 
-        // 원래는 목적지의 또다른 주소정보로 소켓을 만든후 connect하는 루프를 돌아야함
-        ConnectSocket = INVALID_SOCKET;
+            // 원래는 목적지의 또다른 주소정보로 소켓을 만든후 connect하는 루프를 돌아야함
+            ConnectSocket = INVALID_SOCKET;
+
+            continue;
+        }
+
+        break;
     }
 
         // 다쓴 주소정보 해제
@@ -145,24 +152,25 @@ int main()
             std::cout << "recv 실패! 에러: " << WSAGetLastError() << std::endl;
     } while (iResult > 0);
 
-    // 6. 
+    // 6. 소켓 연결 끊기
 
+    iResult = shutdown(ConnectSocket, SD_SEND);
+    if (iResult == SOCKET_ERROR)
+    {
+        printf("shutdown failed: %d\n", WSAGetLastError());
 
+        closesocket(ConnectSocket);
+        WSACleanup();
 
+        return 1;
+    }
 
+    // 7. 뒷정리
 
-
-
-
-
-
-
-
-    // 마무리
-
+    closesocket(ConnectSocket);
     WSACleanup();
 
-    std::cout << "Winsock 환경 설정 성공!" << std::endl;
+    std::cout << "[Client] Winsock 환경 설정 성공!" << std::endl;
 
     return 0;
 }

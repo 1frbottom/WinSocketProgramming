@@ -204,7 +204,7 @@ int main()
     closesocket(ClientSocket);
     WSACleanup();               // 모듈 반납
 
-    std::cout << "Winsock 환경 설정 성공!" << std::endl;
+    std::cout << "[Server] Winsock 환경 설정 성공!" << std::endl;
 
     return 0;
 }
