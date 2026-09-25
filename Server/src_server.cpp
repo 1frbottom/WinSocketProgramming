@@ -105,6 +105,7 @@ int main()
 
     // 5. 리슨소켓의 수신 대기 ----------------------------------------------------
 
+        // 리슨 : 연결요청 쌓아둘 backlog queue 생성, accept()로 꺼내기
         // 리슨소켓은 수신 요청 관리 전용, 실제 수신은 전용 소켓을 새로 만듬
     iResult = listen(ListenSocket, SOMAXCONN);  // Socket Maximum Connections
     if (iResult == SOCKET_ERROR)
